@@ -21,10 +21,15 @@ async function update(session, automatic, replacement) {
   const before = await session.read();
   if (before.skip) return {action: "keep", title: before.title, reason: "此会话不参与命名", backend: session.backend};
   const messages = await session.messages(before.path);
-  const owned = Boolean(before.title) && before.title === (await getState(host, session.id)).title;
+  const state = await getState(host, session.id);
+  const tracked = Object.hasOwn(state, "title");
+  const owned = Boolean(before.title) && tracked && before.title === state.title;
+  // Antigravity/Codex auto-generate an initial title before the first Stop Hook runs;
+  // only lock as manual after a baseline exists (or on Claude Code where custom-title is always explicit).
+  const locked = automatic && Boolean(before.title) && !owned
+    && (host === "claude" || tracked) && before.title !== messages[0];
   const result = replacement ? {action: "rename", title: replacement, reason: "显式指定标题"}
-    : await suggest(messages, {current: before.title, managed: owned,
-        locked: automatic && Boolean(before.title) && !owned && before.title !== messages[0]}, nativeGenerator(host));
+    : await suggest(messages, {current: before.title, managed: owned, locked}, nativeGenerator(host));
   if (command === "preview-session" || result.action === "keep") return {...result, backend: session.backend};
 
   const latest = await session.read();

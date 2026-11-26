@@ -29,3 +29,8 @@
 - `scripts/antigravity/adapter.mjs` 新增 `annotations/*.pbtxt` 原子读写降级通道，解决桌面端 `Stop` Hook 未注入 RPC 环境变量时无法写回的问题。
 - 新增 `doctor`、`status` 命令与 `~/.local/state/threadtag/events.jsonl` 精简事件日志。
 - 验证：`agy plugin validate` 通过（`skills 1 · hooks 1`），`lsrpc GetAllPlugins` 已识别，`doctor`/`status` 与无 RPC 环境变量下的 `pbtxt_fallback` 隔离端到端测试全部通过。
+
+## 2026-11-26 14:58 UTC 修复 Antigravity/Codex 首轮默认标题被误判为手动标题的问题
+
+- 根因：Antigravity 首轮结束前会自动写入默认标题（如 `List Codex Threads`），旧逻辑将未跟踪会话的任何非空标题直接判为 `locked=true`（`手动标题已固定`）。
+- 修复：`scripts/threadtag.mjs` 仅在已建立基线（`state` 含 `title`）后，或 Claude Code（`custom-title` 仅由手动 `/rename` 产生）时将非托管标题锁定为手动标题。
