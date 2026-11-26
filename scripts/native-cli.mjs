@@ -52,7 +52,7 @@ async function antigravity(input, signal, cwd) {
   const raw = await run(binary, ["--print", `${instructions}\n\n${input}`,
     "--model", "gemini-3.8-flash-low", "--effort", "low", "--mode", "plan",
     "--disable-slash-commands", "--sandbox", "--output-format", "json",
-    "--print-timeout", "12s"], "", cwd, signal);
+    "--print-timeout", "25s"], "", cwd, signal);
   const result = JSON.parse(raw);
   if (result.status !== "SUCCESS") throw new Error("Antigravity 命名失败");
   return result.response.trim().replace(/^\x60\x60\x60(?:json)?\s*|\s*\x60\x60\x60$/gu, "");

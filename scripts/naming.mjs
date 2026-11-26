@@ -29,11 +29,23 @@ export function validTitle(title) {
     && [...title].length <= 42 && Buffer.byteLength(title) <= 110;
 }
 
+const secret = /[\w.+-]+@[\w.-]+\.[a-z]{2,}|\b(?:sk-[\w-]+|ghp_[\w-]+|AKIA[A-Z0-9]{16})\b|(?:密码|密钥|password|token|api.key)\s*[:=]|\d(?:[ -]?\d){8,}/iu;
+
 function cleanInput(raw) {
   const wrapped = raw.match(/<USER_REQUEST>\s*([\s\S]*?)\s*<\/USER_REQUEST>/u);
-  const line = (wrapped?.[1] ?? raw).trim().split(/[。！？!?\r\n；]/u, 1)[0].trim();
-  if (line.length > 160 || unsafe.test(line) || followup.test(line)
+  let line = (wrapped?.[1] ?? raw).trim().split(/[。！？!?\r\n；]/u, 1)[0].trim();
+  if (!line || secret.test(line) || followup.test(line)
       || /^(?:你好|谢谢|嗨|你好啊|hello|hi|help|收到|好的)[，,. ]*$/iu.test(line)) return "";
+  // Redact URLs and local paths to their trailing segment so questions mentioning links/paths can still be named,
+  // while validTitle() continues to strictly block URLs/paths in the final title.
+  line = line
+    .replace(/https?:\/\/github\.com\/([\w.-]+\/[\w.-]+)\S*/giu, "$1")
+    .replace(/https?:\/\/\S+/giu, "")
+    .replace(/(^|[\s(])(?:~\/|\/|[a-z]:\\)[^\s)，,]+/giu, "$1")
+    .replace(/[\p{Cc}\p{Cf}<>|"']/gu, "")
+    .replace(/\s+/gu, " ")
+    .trim();
+  if (!line || line.length > 160) return "";
   return line;
 }
 
