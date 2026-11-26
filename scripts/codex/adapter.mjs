@@ -5,6 +5,26 @@ import {homedir} from "node:os";
 import {withCodex} from "./rpc.mjs";
 import {sessionId} from "../host-state.mjs";
 
+const injectedPrefix = /^(?:# AGENTS\.md instructions for |<(?:environment_context|permissions instructions|collaboration_mode|turn_aborted|INSTRUCTIONS|user_instructions)>)/u;
+
+function extractCodexUserText(entry) {
+  if (entry.type === "event_msg" && entry.payload?.type === "user_message"
+      && typeof entry.payload.message === "string") {
+    return entry.payload.message.trim();
+  }
+  if (entry.type === "response_item" && entry.payload?.type === "message"
+      && entry.payload?.role === "user" && Array.isArray(entry.payload.content)) {
+    const text = entry.payload.content
+      .filter(part => part && (part.type === "input_text" || part.type === "text") && typeof part.text === "string")
+      .map(part => part.text)
+      .join("\n")
+      .trim();
+    if (!text || injectedPrefix.test(text)) return "";
+    return text;
+  }
+  return "";
+}
+
 export async function readCodexMessages(path, id) {
   const folder = resolve(process.env.CODEX_HOME || resolve(homedir(), ".codex"), "sessions");
   const rel = relative(folder, resolve(path));
@@ -16,9 +36,9 @@ export async function readCodexMessages(path, id) {
   for await (const line of lines) {
     let entry;
     try { entry = JSON.parse(line); } catch { continue; }
-    if (entry.type === "event_msg" && entry.payload?.type === "user_message"
-        && typeof entry.payload.message === "string") {
-      messages.push(entry.payload.message);
+    const text = extractCodexUserText(entry);
+    if (text) {
+      messages.push(text);
       if (messages.length > 6) messages.shift();
     }
   }
