@@ -22,3 +22,10 @@
 - 将开发/实验图标调整为 `🧑‍💻` / `🎯`，并放行 `validTitle` 与 `rename` 前缀中 `🧑‍💻` 的零宽连接符。
 - 涉及文件：`SKILL.md`、`references/hosts.md`、`scripts/naming.mjs`、`scripts/threadtag.mjs`、`scripts/native-cli.mjs`、`scripts/claude/adapter.mjs`。
 - 待办：本机 `claude` CLI 尚未 `/login`，登录后可验收 Claude Code `native` 模式与桌面/终端实时触发。
+
+## 2026-11-26 14:08 UTC 封装为完整 Antigravity 插件并支持 pbtxt 后台写回
+
+- 将 `plugin.json` 与 `hooks.json` 提升至仓库根目录并添加 `skills/threadtag/SKILL.md` 软链接，移除 `scripts/` 下旧清单；本机 `~/.gemini/config/plugins/threadtag` 改为指向仓库根目录。
+- `scripts/antigravity/adapter.mjs` 新增 `annotations/*.pbtxt` 原子读写降级通道，解决桌面端 `Stop` Hook 未注入 RPC 环境变量时无法写回的问题。
+- 新增 `doctor`、`status` 命令与 `~/.local/state/threadtag/events.jsonl` 精简事件日志。
+- 验证：`agy plugin validate` 通过（`skills 1 · hooks 1`），`lsrpc GetAllPlugins` 已识别，`doctor`/`status` 与无 RPC 环境变量下的 `pbtxt_fallback` 隔离端到端测试全部通过。

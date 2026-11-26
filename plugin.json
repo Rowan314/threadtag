@@ -1,0 +1,17 @@
+{
+  "name": "threadtag",
+  "displayName": "话题签 · ThreadTag",
+  "version": "0.2.0",
+  "description": "在 Antigravity 桌面端每轮对话结束后后台自动维护「类别 emoji 对象｜目标」会话标题，支持本地规则与宿主轻量模型，保护手动标题并兼顾 Codex / Claude Code / DeepSeek Harness。",
+  "author": {
+    "name": "Rowan314",
+    "url": "https://github.com/Rowan314"
+  },
+  "homepage": "https://github.com/Rowan314/threadtag",
+  "repository": "https://github.com/Rowan314/threadtag",
+  "suggestedPrompts": [
+    "检查 threadtag 的运行状态、Hook 与最近后台命名记录",
+    "预览或立即更新当前对话的标题",
+    "切换 threadtag 为 native 或 local 模式，或暂停自动命名"
+  ]
+}

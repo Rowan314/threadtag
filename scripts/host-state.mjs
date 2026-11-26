@@ -1,4 +1,4 @@
-import {mkdir, readFile, rename, writeFile} from "node:fs/promises";
+import {appendFile, mkdir, readdir, readFile, rename, writeFile} from "node:fs/promises";
 import {randomUUID} from "node:crypto";
 import {homedir} from "node:os";
 import {join} from "node:path";
@@ -43,4 +43,32 @@ export async function save(name, value) {
 
 export function setManaged(host, id, title) {
   return save(`${host}-${sessionId(id)}.json`, {title});
+}
+
+export async function recordEvent(event) {
+  try {
+    await mkdir(home(), {recursive: true, mode: 0o700});
+    const line = JSON.stringify({ts: new Date().toISOString(), ...event}) + "\n";
+    await appendFile(join(home(), "events.jsonl"), line, {mode: 0o600});
+  } catch {}
+}
+
+export async function recentEvents(limit = 5) {
+  try {
+    const raw = await readFile(join(home(), "events.jsonl"), "utf8");
+    return raw.trim().split("\n").filter(Boolean).slice(-limit).map(line => {
+      try { return JSON.parse(line); } catch { return null; }
+    }).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+export async function trackedCount() {
+  try {
+    const files = await readdir(home());
+    return files.filter(name => /^(?:antigravity|codex|claude)-[0-9a-f-]+\.json$/u.test(name)).length;
+  } catch {
+    return 0;
+  }
 }

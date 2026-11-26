@@ -1,0 +1,11 @@
+{
+  "threadtag": {
+    "Stop": [
+      {
+        "type": "command",
+        "command": "for n in /opt/homebrew/bin/node /usr/local/bin/node node; do command -v \"$n\" >/dev/null 2>&1 && exec \"$n\" ./scripts/threadtag.mjs hook antigravity; done",
+        "timeout": 10
+      }
+    ]
+  }
+}

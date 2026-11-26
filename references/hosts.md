@@ -22,7 +22,7 @@ node threadtag.mjs preview '续跑 QVHighlights 三种子训练' '继续，补�
 | Codex | Stop Hook 后台运行 | App Server 的 `thread/name/set` |
 | Claude Code | Stop Hook 后台运行 | 追加 `custom-title` 记录到会话 `.jsonl` |
 | DeepSeek Harness | 原生 `sessionTitle` 的 all-prompts 标题提供方 | Harness 自己持久化并投影到列表 |
-| Antigravity Desktop | 原生 Stop Hook 后台运行 | 本机 ConversationService |
+| Antigravity Desktop | 完整插件 `Stop` Hook 后台运行 | 优先本机 `ConversationService`，缺失 RPC 变量时原子写入 `annotations/*.pbtxt` |
 
 ### Codex
 
@@ -54,7 +54,17 @@ node threadtag.mjs rename claude <会话UUID> '我指定的标题'
 
 ### Antigravity Desktop
 
-在插件加载入口添加本目录。依照 `oil-agy-title` 已有的加载方式，插件根目录包含 `plugin.json` 和 `hooks.json`。先停用同一会话上的原标题插件，以免两个 Stop Hook 同时更新。当前适配要求宿主注入本机 Language Server 地址和 CSRF token。无 RPC、已置顶、已归档或子会话会跳过自动命名，持久化文件由宿主管理。
+仓库根目录自带 `plugin.json`、`hooks.json` 和 `skills/threadtag/SKILL.md`，可直接作为完整 Antigravity 插件安装：
+
+```sh
+agy plugin install /path/to/threadtag
+# 或直接复制到全局插件目录：
+cp -R /path/to/threadtag ~/.gemini/config/plugins/threadtag
+```
+
+先停用同一会话上的其他标题插件（如 `oil-agy-title`），以免两个 `Stop` Hook 同时更新。后台 `Stop` Hook 触发时：有 `ANTIGRAVITY_LS_ADDRESS` / `ANTIGRAVITY_CSRF_TOKEN` 环境变量则走官方 `ConversationService` 实时热更新；未注入时自动降级为原子更新 `~/.gemini/antigravity/annotations/<id>.pbtxt`（重载或刷新会话后同步显示到侧边栏）。已置顶、已归档或子会话会自动跳过。
+
+安装后可运行 `node scripts/threadtag.mjs doctor` 检查环境，并在新会话聊一轮后运行 `node scripts/threadtag.mjs status` 查看最近 5 条后台触发记录。
 
 ### 可选宿主轻量模型
 

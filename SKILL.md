@@ -14,6 +14,8 @@ description: 话题签。为科研、开发、聊天和日常事务生成或预�
 
 例如 `🎯 QVHighlights 三种子｜训练`、`📚 SPaGS｜精读`、`🧑‍💻 Tabard 标题栏背景｜修复`。
 
-## 自动命名
+## 自动命名与诊断
 
-只有在用户要求安装、配置或排查自动命名，或切换轻量模型时，才读 [宿主接入说明](references/hosts.md)。其中命令从本 Skill 的 `scripts/` 目录执行。Skill 本身供对话内调用，后台自动命名由各宿主入口负责。
+- 检查环境、Hook 与当前会话读取：`node scripts/threadtag.mjs doctor`
+- 查看当前模式、已跟踪会话数与最近 5 条后台命名记录：`node scripts/threadtag.mjs status`
+- 只有在用户要求安装、配置或排查自动命名，或切换轻量模型时，才读 [宿主接入说明](references/hosts.md)。其中命令从本 Skill 的 `scripts/` 目录执行。Skill 本身供对话内调用，后台自动命名由插件 `Stop` Hook 或各宿主入口负责。
