@@ -23,6 +23,12 @@ const unsafe = /https?:\/\/|(?:^|[\s(])(?:~\/|\/|[a-z]:\\)|[\w.+-]+@[\w.-]+\.[a-
 const managedShape = /^(?:🎯|📚|✍️|🎨|🧑‍💻|📅|🧾|🔎|⚙️|💬) [^｜]+｜[^｜]+$/u;
 const followup = /^(?:继续|然后|再补|补充|加个测试|补个测试|验证一下|跑一下测试|做个截图|提交|推送|谢谢|好的|收到|ok\b|thanks\b|continue\b|add (?:unit )?tests\b)/iu;
 
+export function normalizeTitle(title) {
+  if (typeof title !== "string") return "";
+  // Some lightweight LLMs drop the invisible ZWJ inside 🧑‍💻, emitting 🧑💻; repair it before validation.
+  return title.trim().replace(/^🧑\u200D?💻 /u, "🧑‍💻 ");
+}
+
 export function validTitle(title) {
   // managedShape guarantees the leading category icon is allowlisted; check unsafe on the body so ZWJ in 🧑‍💻 is permitted.
   return typeof title === "string" && managedShape.test(title) && !unsafe.test(title.slice(title.indexOf(" ") + 1))
