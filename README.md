@@ -16,7 +16,19 @@
 
 ## 安装
 
-### 作为 Skill 使用
+### 方式一：直接发给 Agent 一键安装（推荐）
+
+把下面这段话直接发给 **Antigravity、Codex、Claude Code 或 DeepSeek Harness**：
+
+```text
+请帮我安装并验证 https://github.com/Rowan314/threadtag 这个 Skill（话题签）：
+1. 将仓库克隆到全局 Skills 目录（如 ~/.agent/skills/threadtag，若当前工具使用独立目录则一并软链接或克隆到对应 skills 目录）。
+2. 阅读仓库中的 references/hosts.md，按当前宿主完成后台自动命名接入（如 Antigravity 将 scripts/ 接入全局插件目录，Codex 合入 ~/.codex/hooks.json，Claude Code 合入 ~/.claude/settings.json，DeepSeek Harness 合入 cordis.patch.yml），避免与同类标题插件冲突。
+3. 将模型模式设为 native（如希望纯本地零消耗则保持 local）。
+4. 运行 preview 和当前宿主的检查命令（如 preview-session / hook-config / 插件列表核验），确认安装成功且可正常使用后汇报结果。
+```
+
+### 方式二：手动命令行安装
 
 将仓库克隆到你的全局 Skills 目录（例如 `~/.agent/skills/threadtag`、`~/.codex/skills/threadtag` 或 `~/.claude/skills/threadtag`）：
 
