@@ -1,0 +1,86 @@
+# 话题签 · ThreadTag
+
+给科研、开发、聊天和日常杂事生成容易找回的标题，统一使用「类别 emoji 对象｜目标」。比如 `🎯 QVHighlights 三种子｜训练`、`🧑‍💻 Tabard 标题栏背景｜修复`、`🧾 课程提交材料｜整理`。
+
+话题签借鉴 [oil-agy-title](https://github.com/oil-oil/oil-agy-title) 和 [oil-codex-title](https://github.com/oil-oil/oil-codex-title) 的对象优先、标题稳定和后台命名设计。默认使用本地规则。分类涵盖实验、论文、写作、创作、开发、日程、杂务、调研、环境和讨论。产品名保留原文，规则优先覆盖简洁的中文需求和常见英文动词。表达不明确或带有路径、邮箱等敏感模式时保留现有标题。标题建立后，用「换个话题：……」或 `New topic: …` 明确切换主线。
+
+## 快速预览
+
+需要 Node.js 22 或更高版本。在本目录执行：
+
+```sh
+node threadtag.mjs preview '精读《SPaGS》论文'
+node threadtag.mjs preview '续跑 QVHighlights 三种子训练' '继续，补充 LPIPS'
+```
+
+## 接入 Agent
+
+建议把整个目录放在稳定位置。以下命令从该目录运行。四个接入方式独立，可以按需启用。
+
+| 宿主 | 自动入口 | 写回 |
+| --- | --- | --- |
+| Codex | Stop Hook 后台运行 | App Server 的 `thread/name/set` |
+| Claude Code | Stop Hook 后台运行 | 追加 `custom-title` 记录到会话 `.jsonl` |
+| DeepSeek Harness | 原生 `sessionTitle` 的 all-prompts 标题提供方 | Harness 自己持久化并投影到列表 |
+| Antigravity Desktop | 原生 Stop Hook 后台运行 | 本机 ConversationService |
+
+### Codex
+
+先用 `node threadtag.mjs hook-config codex` 生成配置。将生成的 Stop 项加入 `${CODEX_HOME:-$HOME/.codex}/hooks.json` 的 `hooks.Stop`，保留已有项。文件不存在时可直接写入生成结果。路径和 Node 可执行文件均按生成时的实际位置填写。重启宿主或开启新会话，若宿主要求信任 Hook，在它的 Hook 设置中核对命令后授权。
+
+```sh
+node threadtag.mjs preview-session codex <会话UUID>
+node threadtag.mjs rename codex <会话UUID> '我指定的标题'
+```
+
+自动模式处理空标题、等于首条原始需求的回退标题，以及本插件上次写入且仍一致的标题。其他已有标题按手动名称保护。部分 Codex Desktop 版本的内建自动标题也可能落入保护范围，此时可以先预览再手动应用。CLI 真实写回已验证，Desktop 侧边栏的实时刷新待实机验证。
+
+### Claude Code
+
+先用 `node threadtag.mjs hook-config claude` 生成配置，将生成的 `hooks.Stop` 项合入 `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json` 的 `hooks.Stop` 数组，保留已有设置，再开启新会话生效。
+
+```sh
+node threadtag.mjs preview-session claude <会话UUID>
+node threadtag.mjs rename claude <会话UUID> '我指定的标题'
+```
+
+适配器会在 `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects/*/<会话UUID>.jsonl` 中读取最近的用户消息和最新 `custom-title`，自动跳过纯 sidechain 子会话与已有手动 `/rename` 标题，写回时向对应 `.jsonl` 末尾追加 `custom-title` 记录（与 Claude Code 原生 `/rename` 格式一致，支持 `claude --resume "<标题>"`）。
+
+### DeepSeek Harness
+
+用 `node threadtag.mjs deepseek-patch` 生成 YAML，将两项合入 `${DSH_HOME:-$HOME/.dsh}/profiles/desktop/cordis.patch.yml` 的根数组，再重启 Harness。补丁禁用默认 `session-title-llm`，注册独立 provider。若已配置其他第三方标题 provider，保留其中一个启用。回退时删除这两项。
+
+手动改名用 Harness 自带的侧边栏菜单。Harness 把手动标题标记为用户来源，后续自动修订会跳过它。此适配面向 DeepSeek Harness。普通 DeepSeek 网页和只调用 API 的命令行可用通用 `preview`。
+
+### Antigravity Desktop
+
+在插件加载入口添加本目录。依照 `oil-agy-title` 已有的加载方式，插件根目录包含 `plugin.json` 和 `hooks.json`。先停用同一会话上的原标题插件，以免两个 Stop Hook 同时更新。当前适配要求宿主注入本机 Language Server 地址和 CSRF token。无 RPC、已置顶、已归档或子会话会跳过自动命名，持久化文件由宿主管理。
+
+### 可选宿主轻量模型
+
+```sh
+node threadtag.mjs model         # 查看模式
+node threadtag.mjs model native  # 使用宿主自己的模型
+node threadtag.mjs model local   # 使用纯本地规则
+```
+
+模型模式由四个宿主共用，默认本地。旧版 `deepseek` 模式按本地处理，切换到宿主模式使用 `model native`。沿用宿主已有登录和额度，话题签无需单独配置 API 或密钥。
+
+| 宿主 | 轻量模型 | 推理强度 |
+| --- | --- | --- |
+| Codex | GPT-6 Luna，由登录后的 Codex CLI 启动临时会话 | Low |
+| Claude Code | Haiku，由登录后的 `claude -p --safe-mode` 临时调用 | Low |
+| Antigravity | Gemini 3.8 Flash，由登录后的 `agy` CLI 调用 | Low |
+| DeepSeek Harness | `deepseek-flash`，由 Harness 原生标题 SDK 调用 | 取模型声明的第一档 |
+
+现有手动标题、稳定标题的普通跟进和简单问候跳过模型。新标题和明确换题可使用最近三条用户需求经过滤的短句。模型不可用、超时或返回标题校验失败时回退本地规则。通用 `preview` 没有宿主上下文，使用本地规则。宿主安装、启用和登录各自独立。
+
+## 暂停与恢复
+
+```sh
+node threadtag.mjs pause
+node threadtag.mjs resume
+```
+
+这两个命令控制所有适配入口的自动标题，预览仍然可用。状态默认保存在 `~/.local/state/threadtag`，可通过 `THREADTAG_HOME` 覆盖。Codex 和 Antigravity 会在写前重新读取标题和近期需求，检查在后台运行期间是否有变化。宿主标题接口没有条件写入参数，手动修改恰好落在最终检查和写入之间时仍存在竞争窗口。
+
