@@ -51,7 +51,7 @@ git clone https://github.com/Rowan314/threadtag.git ~/.agent/skills/threadtag
 
 | 宿主 | 自动入口 | 写回方式 | `native` 轻量模型 |
 | :--- | :--- | :--- | :--- |
-| **Antigravity Desktop** | 完整插件 `Stop` Hook | 优先 `ConversationService` 热更新，无 RPC 变量时原子写入 `annotations/*.pbtxt` | Gemini 3.8 Flash (`low`) |
+| **Antigravity Desktop** | 完整插件 `Stop` Hook | 通过本机 `ConversationService` 实时更新侧栏；找不到可用服务时原子写入 `annotations/*.pbtxt` | Gemini 3.8 Flash (`low`) |
 | **Codex** | `hooks.json` `Stop` Hook | App Server `thread/name/set` | GPT-6 Luna (`low`) |
 | **Claude Code** | `settings.json` `Stop` Hook | 追加 `custom-title` 到会话 `.jsonl` | Haiku (`low`, `--safe-mode`) |
 | **DeepSeek Harness** | 原生 `sessionTitle` provider | Harness 原生持久化 | `deepseek-flash` |

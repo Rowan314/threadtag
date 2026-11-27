@@ -6,7 +6,7 @@
 
 ## 快速预览
 
-需要 Node.js 22 或更高版本。在本目录执行：
+需要 Node.js 22 或更高版本。以下 `node threadtag.mjs` 命令在仓库的 `scripts/` 目录执行。
 
 ```sh
 node threadtag.mjs preview '精读《SPaGS》论文'
@@ -22,7 +22,7 @@ node threadtag.mjs preview '续跑 QVHighlights 三种子训练' '继续，补�
 | Codex | Stop Hook 后台运行 | App Server 的 `thread/name/set` |
 | Claude Code | Stop Hook 后台运行 | 追加 `custom-title` 记录到会话 `.jsonl` |
 | DeepSeek Harness | 原生 `sessionTitle` 的 all-prompts 标题提供方 | Harness 自己持久化并投影到列表 |
-| Antigravity Desktop | 完整插件 `Stop` Hook 后台运行 | 优先本机 `ConversationService`，缺失 RPC 变量时原子写入 `annotations/*.pbtxt` |
+| Antigravity Desktop | 完整插件 `Stop` Hook 后台运行 | 本机 `ConversationService` 实时更新；找不到可用服务时原子写入 `annotations/*.pbtxt` |
 
 ### Codex
 
@@ -33,7 +33,7 @@ node threadtag.mjs preview-session codex <会话UUID>
 node threadtag.mjs rename codex <会话UUID> '我指定的标题'
 ```
 
-自动模式处理空标题、等于首条原始需求的回退标题，以及本插件上次写入且仍一致的标题。其他已有标题按手动名称保护。部分 Codex Desktop 版本的内建自动标题也可能落入保护范围，此时可以先预览再手动应用。CLI 真实写回已验证，Desktop 侧边栏的实时刷新待实机验证。
+自动模式会为尚无跟踪记录的会话生成标题，也会维护仍由插件管理的标题。在已跟踪的会话中手动修改标题后，后续自动命名保留该标题。可在 Codex Desktop 的 **Settings → Hooks** 核对 `Stop` Hook 的启用和信任状态。通过真实 CLI 和桌面版 App Server 回合已验证触发和写回，Codex 会话列表接口可读到新标题。
 
 ### Claude Code
 
@@ -62,9 +62,9 @@ agy plugin install /path/to/threadtag
 cp -R /path/to/threadtag ~/.gemini/config/plugins/threadtag
 ```
 
-先停用同一会话上的其他标题插件（如 `oil-agy-title`），以免两个 `Stop` Hook 同时更新。后台 `Stop` Hook 触发时：有 `ANTIGRAVITY_LS_ADDRESS` / `ANTIGRAVITY_CSRF_TOKEN` 环境变量则走官方 `ConversationService` 实时热更新；未注入时自动降级为原子更新 `~/.gemini/antigravity/annotations/<id>.pbtxt`（重载或刷新会话后同步显示到侧边栏）。已置顶、已归档或子会话会自动跳过。
+先停用同一会话上的其他标题插件（如 `oil-agy-title`），以免两个 `Stop` Hook 同时更新。后台 `Stop` Hook 优先采用宿主注入的连接信息，也会从 Antigravity 的 `daemon/hub_*.json` 查找本机服务。服务确认持有当前会话后，`ConversationService` 更新标题并刷新打开的侧栏。找不到可用服务时，插件原子更新 `annotations/<id>.pbtxt`，标题在重新加载会话后显示。已置顶、已归档的会话，以及会话服务标记的子会话会自动跳过。
 
-安装后可运行 `node scripts/threadtag.mjs doctor` 检查环境，并在新会话聊一轮后运行 `node scripts/threadtag.mjs status` 查看最近 5 条后台触发记录。
+安装后可运行 `node threadtag.mjs doctor` 检查环境，在新会话聊一轮后运行 `node threadtag.mjs status` 查看最近 5 条后台触发记录。`conversation_service` 表示通过会话服务更新，`pbtxt_fallback` 表示只写磁盘。
 
 ### 可选宿主轻量模型
 

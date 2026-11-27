@@ -5,12 +5,7 @@ import {randomUUID} from "node:crypto";
 import {dirname, join} from "node:path";
 import {homedir} from "node:os";
 import {sessionId} from "../host-state.mjs";
-
-function hasRpcEnv() {
-  const address = process.env.ANTIGRAVITY_LS_ADDRESS || "";
-  const token = process.env.ANTIGRAVITY_CSRF_TOKEN || "";
-  return Boolean(token) && /^(?:127\.0\.0\.1|localhost|\[::1\]):\d+$/u.test(address);
-}
+import {findConversation} from "./connection.mjs";
 
 function unescapePbtxtString(raw) {
   let out = "";
@@ -48,7 +43,7 @@ async function writePbtxtTitle(pbtxtPath, title) {
 
   const field = `title:"${escapePbtxtString(title)}"`;
   const updated = /(?:^|\s)title:\s*"(?:[^"\\]|\\.)*"/u.test(content)
-    ? content.replace(/(^|\s)title:\s*"(?:[^"\\]|\\.)*"/u, `$1${field}`)
+    ? content.replace(/(^|\s)title:\s*"(?:[^"\\]|\\.)*"/u, (_, space) => space + field)
     : content ? `${field}  ${content}` : `${field}\n`;
 
   await mkdir(dirname(pbtxtPath), {recursive: true});
@@ -62,26 +57,16 @@ export async function withAntigravitySession(rawId, operation) {
   const root = process.env.THREADTAG_AGY_DATA || join(homedir(), ".gemini/antigravity");
   const path = join(root, "brain", id, ".system_generated/logs/transcript.jsonl");
   const pbtxtPath = join(root, "annotations", `${id}.pbtxt`);
-  const useRpc = hasRpcEnv();
-
-  async function rpc(method, body) {
-    const address = process.env.ANTIGRAVITY_LS_ADDRESS;
-    const token = process.env.ANTIGRAVITY_CSRF_TOKEN;
-    const response = await fetch(`http://${address}/product.v1.ConversationService/${method}`, {
-      method: "POST", redirect: "error", signal: AbortSignal.timeout(6000),
-      headers: {"Content-Type": "application/json", "Connect-Protocol-Version": "1", "x-antigravity-csrf-token": token},
-      body: JSON.stringify({conversationId: id, ...body}),
-    });
-    if (!response.ok) throw new Error(`Antigravity RPC 错误 ${response.status}`);
-    return response.json();
-  }
+  const live = await findConversation(root, id);
+  let initial = live?.conversation;
 
   return operation({
     id,
-    backend: useRpc ? "conversation_service" : "pbtxt_fallback",
+    backend: live ? "conversation_service" : "pbtxt_fallback",
     async read() {
-      if (useRpc) {
-        const value = await rpc("GetConversation");
+      if (live) {
+        const value = initial ?? await live.call("GetConversation");
+        initial = undefined;
         return {
           path,
           title: value.annotations?.title || "",
@@ -116,8 +101,8 @@ export async function withAntigravitySession(rawId, operation) {
       return messages;
     },
     async rename(title) {
-      if (useRpc) {
-        const value = await rpc("UpdateConversation", {annotations: {title}});
+      if (live) {
+        const value = await live.call("UpdateConversation", {annotations: {title}});
         if (value.annotations?.title !== title) throw new Error("Antigravity 返回的标题不一致");
         return;
       }

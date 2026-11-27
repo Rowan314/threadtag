@@ -34,3 +34,10 @@
 
 - 根因：Antigravity 首轮结束前会自动写入默认标题（如 `List Codex Threads`），旧逻辑将未跟踪会话的任何非空标题直接判为 `locked=true`（`手动标题已固定`）。
 - 修复：`scripts/threadtag.mjs` 仅在已建立基线（`state` 含 `title`）后，或 Claude Code（`custom-title` 仅由手动 `/rename` 产生）时将非托管标题锁定为手动标题。
+
+## 2026-11-26 15:37 UTC 恢复 Antigravity 桌面端标题实时更新
+
+- 桌面 `Stop` Hook 缺少 RPC 环境变量时，从宿主私有的 `daemon/hub_*.json` 发现负责该会话的本机服务，经 `ConversationService` 更新已打开窗口的标题。
+- 涉及 `scripts/antigravity/{connection,adapter}.mjs`、`test/antigravity.test.mjs` 及两份接入文档。保留离线注解写回。
+- 4 项回归测试通过；Antigravity 2.35.2 新会话的顶部和侧栏无需刷新即更新。Codex 的现有 Hook 为可信，真实 CLI 和桌面版 App Server 均触发并写回，桌面列表接口读到新标题。
+- 本机已通过插件软链接加载修复；本轮只验证 Antigravity 和 Codex。
