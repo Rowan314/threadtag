@@ -1,86 +1,39 @@
 # 话题签 · ThreadTag
 
-为科研、开发、创作和日常事务自动维护易检索的会话标题，统一使用「`类别 emoji 对象｜目标`」格式（≤ 42 字，对象在前，保留项目、论文、模型原名，跟随用户主要语言）。
+让你一眼认出每段对话在做什么。比如，讨论三天旅行行程时，话题签可以把会话命名为「📅 周末旅行｜规划三天行程」，下次打开侧栏就能找到。
 
-- **10 类场景分类**：🎯 实验、📚 论文、✍️ 写作、🎨 创作、🧑‍💻 开发、📅 日程、🧾 杂务、🔎 调研、⚙️ 环境、💬 讨论
-- **双生成模式**：默认纯本地规则（零消耗、离线、毫秒级）；可选 `native` 模式直接复用宿主已登录的轻量模型，超时或不可用时自动回退本地规则
-- **多宿主独立接入**：支持 **Antigravity Desktop**、**Codex**、**Claude Code** 和 **DeepSeek Harness**
-- **稳定与隐私保护**：不覆写手动标题、自动跳过子会话/归档会话、过滤 URL/路径/邮箱/密钥等敏感模式；需要切换主线时说「换个话题：…」或 `New topic: …`
+话题签支持 **Codex、Antigravity Desktop、Claude Code 和 DeepSeek Harness**。装好后，它可以自动整理标题，也可以按你的要求预览或改名。
 
-> 命名规范、对象优先与后台稳定设计借鉴了 [oil-agy-title](https://github.com/oil-oil/oil-agy-title) 和 [oil-codex-title](https://github.com/oil-oil/oil-codex-title)。
+## 先选一种命名方式
 
-## 依赖
+| 模式 | 什么时候选 |
+| :--- | :--- |
+| **本地模式（`local`，默认）** | 想省额度或离线使用。话题签在本机根据对话内容提取对象和目标，生成标题不消耗模型额度。 |
+| **宿主模型模式（`native`）** | 对话经常有多轮跟进，希望模型结合上下文抓住主线。话题签使用当前应用已登录的轻量模型，沿用该应用的额度。模型不可用时会自动切回本地规则生成这次的标题。 |
 
-- Node.js 22+
-- 使用 `native` 模式时，需对应宿主 CLI 已登录（无需单独配置外部 API Key）
+两种模式可随时切换。用宿主模型无需为话题签单独配置 API Key。
 
 ## 安装
 
-### 方式一：直接发给 Agent 一键安装（推荐）
+需要 Node.js 22 或更新版本。把下面这段话发给你正在用的 Codex、Antigravity、Claude Code 或 DeepSeek Harness：
 
-把下面这段话直接发给 **Antigravity、Codex、Claude Code 或 DeepSeek Harness**：
+> 请为我安装 [话题签 ThreadTag](https://github.com/Rowan314/threadtag) 完整插件，并按仓库里的 [宿主接入说明](https://github.com/Rowan314/threadtag/blob/main/references/hosts.md) 为我当前使用的应用启用自动命名。使用默认的本地模式，安装好后请验证能否自动生成标题。
 
-```text
-请帮我安装并验证 https://github.com/Rowan314/threadtag 完整插件/Skill（话题签，包含后台 Stop Hook，不要只装 SKILL.md）：
-1. 若当前是 Antigravity 桌面端，请将仓库作为完整插件安装到全局插件目录（~/.gemini/config/plugins/threadtag 或 agy plugin install），并确保与同类标题插件不冲突。
-2. 若当前是 Codex / Claude Code / DeepSeek Harness，请将仓库克隆到对应 Skills 目录，并按 references/hosts.md 完成后台自动命名接入（Codex 合入 ~/.codex/hooks.json，Claude Code 合入 ~/.claude/settings.json，DeepSeek Harness 合入 cordis.patch.yml）。
-3. 将模型模式设为 native（如希望纯本地零消耗则保持 local）。
-4. 运行 node scripts/threadtag.mjs doctor、status 与 preview 检查，确认插件/Hook 与当前宿主均可正常工作后汇报结果。
-```
+如果你想用宿主模型，把最后一句里的「默认的本地模式」换成「宿主模型模式」。想自己安装，可以查看[各应用的安装与接入步骤](references/hosts.md)。
 
-### 方式二：手动命令行安装
+## 怎么用
 
-**Antigravity 桌面端（完整插件，含 `Stop` Hook + Skill）**：
+开启自动命名后，照常聊天即可。标题会尽量保留项目、论文或模型的原名。已手动修改的标题会受到保护。对话转向新任务时，可以明确说「换个话题：……」。
 
-```sh
-git clone https://github.com/Rowan314/threadtag.git
-agy plugin install ./threadtag
-# 或直接复制到全局插件目录：
-cp -R ./threadtag ~/.gemini/config/plugins/threadtag
-```
+你也可以直接对 Agent 说：
 
-**其他宿主作为 Skill 安装**（Codex / Claude Code / 通用 Skills 目录）：
+- 「先预览这个对话的标题。」
+- 「把当前对话改名为『✍️ 读书笔记｜整理初稿』。」
+- 「把话题签切到宿主模型模式。」或「切回纯本地模式。」
+- 「暂停话题签自动命名。」或「恢复话题签自动命名。」
 
-```sh
-git clone https://github.com/Rowan314/threadtag.git ~/.agent/skills/threadtag
-```
+预览只显示候选标题，确认改名后才会写入。
 
-安装后可在对话中直接调用 `/threadtag` 或让 Agent 预览、更新会话标题。
+## 许可与致谢
 
-### 启用各宿主后台自动命名
-
-| 宿主 | 自动入口 | 写回方式 | `native` 轻量模型 |
-| :--- | :--- | :--- | :--- |
-| **Antigravity Desktop** | 完整插件 `Stop` Hook | 通过本机 `ConversationService` 实时更新侧栏；找不到可用服务时原子写入 `annotations/*.pbtxt` | Gemini 3.8 Flash (`low`) |
-| **Codex** | `hooks.json` `Stop` Hook | App Server `thread/name/set` | GPT-6 Luna (`low`) |
-| **Claude Code** | `settings.json` `Stop` Hook | 追加 `custom-title` 到会话 `.jsonl` | Haiku (`low`, `--safe-mode`) |
-| **DeepSeek Harness** | 原生 `sessionTitle` provider | Harness 原生持久化 | `deepseek-flash` |
-
-各宿主详细配置见 [references/hosts.md](references/hosts.md)。
-
-## 常用命令
-
-以下命令在仓库根目录运行（或指定 `scripts/threadtag.mjs` 完整路径）：
-
-```sh
-node scripts/threadtag.mjs doctor        # 检查环境、插件清单、Hook 与当前会话读取
-node scripts/threadtag.mjs status        # 查看当前模式、已跟踪会话数与最近 5 条后台记录
-node scripts/threadtag.mjs preview '精读《SPaGS》论文'
-node scripts/threadtag.mjs preview-session <codex|claude|antigravity> <会话UUID>
-node scripts/threadtag.mjs rename <codex|claude|antigravity> <会话UUID> '新标题'
-
-node scripts/threadtag.mjs model         # 查看当前模式（local / native）
-node scripts/threadtag.mjs model native  # 启用宿主轻量模型
-node scripts/threadtag.mjs model local   # 切回纯本地规则
-
-node scripts/threadtag.mjs pause         # 全局暂停自动命名
-node scripts/threadtag.mjs resume        # 恢复自动命名
-
-node scripts/threadtag.mjs hook-config codex   # 生成 Codex hooks.json 片段
-node scripts/threadtag.mjs hook-config claude  # 生成 Claude Code settings.json 片段
-node scripts/threadtag.mjs deepseek-patch      # 生成 DeepSeek Harness 补丁
-```
-
-## 许可证
-
-[MIT](LICENSE)
+[MIT 许可证](LICENSE)。命名规则参考了 [oil-agy-title](https://github.com/oil-oil/oil-agy-title) 和 [oil-codex-title](https://github.com/oil-oil/oil-codex-title)。
